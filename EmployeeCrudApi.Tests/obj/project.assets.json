@@ -4304,19 +4304,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\oscar\\.nuget\\packages\\": {}
+    "C:\\Users\\franc\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi.Tests\\EmployeeCrudApi.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi.Tests\\EmployeeCrudApi.Tests.csproj",
       "projectName": "EmployeeCrudApi.Tests",
-      "projectPath": "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi.Tests\\EmployeeCrudApi.Tests.csproj",
-      "packagesPath": "C:\\Users\\oscar\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi.Tests\\obj\\",
+      "projectPath": "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi.Tests\\EmployeeCrudApi.Tests.csproj",
+      "packagesPath": "C:\\Users\\franc\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\oscar\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\franc\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -4328,8 +4328,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj": {
-              "projectPath": "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj"
+            "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj": {
+              "projectPath": "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj"
             }
           }
         }
