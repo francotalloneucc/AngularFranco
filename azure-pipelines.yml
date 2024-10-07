@@ -5,7 +5,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  solution: '**/*.sln' # Cambié la ruta del archivo de solución para que coincida con cualquier .sln
+  solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   frontPath: './EmployeeCrudAngular'
@@ -22,12 +22,12 @@ stages:
     - checkout: self
       fetchDepth: 0
 
-    # Instalar .NET 6 (formato corregido para versión compatible)
+    # Instalar .NET 8 SDK
     - task: UseDotNet@2
-      displayName: 'Instalar .NET 6 SDK'
+      displayName: 'Instalar .NET 8.0 SDK'
       inputs:
         packageType: 'sdk'
-        version: '6.x' # Formato correcto
+        version: '8.x' # Instalar la última versión de .NET 8
         installationPath: $(Agent.ToolsDirectory)/dotnet
 
     # Restaurar paquetes NuGet
@@ -42,14 +42,14 @@ stages:
       displayName: 'Ejecutar pruebas de la API'
       inputs:
         command: 'test'
-        projects: '**/*.Tests.csproj' # Se ajustó el patrón de búsqueda
+        projects: '**/*.Tests.csproj'
         arguments: '--collect:"XPlat Code Coverage"'
 
     # Publicar resultados de code coverage del back-end
     - task: PublishCodeCoverageResults@2
       displayName: 'Publicar resultados de code coverage del back-end'
       inputs:
-        summaryFileLocation: '$(Agent.TempDirectory)/**/*.cobertura.xml' # Ajuste de ruta
+        summaryFileLocation: '$(Agent.TempDirectory)/**/*.cobertura.xml'
         failIfCoverageEmpty: false
 
     # Compilar la API
