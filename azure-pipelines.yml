@@ -22,12 +22,12 @@ stages:
     - checkout: self
       fetchDepth: 0
 
-    # Instalar .NET 6 (o la versión que necesites)
+    # Instalar .NET 6 (formato corregido para versión compatible)
     - task: UseDotNet@2
       displayName: 'Instalar .NET 6 SDK'
       inputs:
         packageType: 'sdk'
-        version: '6.x.x' # Cambia si usas otra versión
+        version: '6.x' # Formato correcto
         installationPath: $(Agent.ToolsDirectory)/dotnet
 
     # Restaurar paquetes NuGet
