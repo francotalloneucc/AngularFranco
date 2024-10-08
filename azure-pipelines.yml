@@ -11,11 +11,18 @@ variables:
   frontPath: './EmployeeCrudAngular'
 
 stages:
-  - stage: PrepareSonarCloud
-    displayName: 'Prepare SonarCloud'
+  - stage: BuildAndAnalyze
+    displayName: 'Build, Test and Analyze API and Front'
     jobs:
-      - job: PrepareSonarCloud
+      - job: BuildDotnet
+        displayName: 'Build and Test API'
+        pool:
+          vmImage: 'windows-latest'
         steps:
+          - checkout: self
+            fetchDepth: 0
+
+          # Preparar SonarCloud
           - task: SonarCloudPrepare@2
             inputs:
               SonarCloud: 'SonarCloud'
@@ -23,26 +30,6 @@ stages:
               scannerMode: 'MSBuild'
               projectKey: 'francotallone_TP7'
               projectName: 'TP7'
-
-  - stage: BuildAndTest
-    displayName: "Build and Test API and Front"
-    jobs:
-      - job: BuildDotnet
-        displayName: "Build and Test API"
-        pool:
-          vmImage: 'windows-latest'
-        steps:
-          - checkout: self
-            fetchDepth: 0
-            
-          # Análisis SonarCloud
-          - task: SonarCloudAnalyze@2
-            inputs:
-              jdkversion: 'JAVA_HOME_17_X64'
-    
-          - task: SonarCloudPublish@2
-            inputs:
-              pollingTimeoutSec: '300'
 
           # Instalar .NET 8 SDK
           - task: UseDotNet@2
@@ -98,6 +85,16 @@ stages:
               PathtoPublish: '$(Build.ArtifactStagingDirectory)'
               ArtifactName: 'api-drop'
               publishLocation: 'Container'
+
+          # Análisis de código con SonarCloud
+          - task: SonarCloudAnalyze@2
+            inputs:
+              jdkversion: 'JAVA_HOME_17_X64'
+
+          # Publicar resultados de SonarCloud
+          - task: SonarCloudPublish@2
+            inputs:
+              pollingTimeoutSec: '300'
 
       - job: BuildAngular
         displayName: "Build and Test Angular"
