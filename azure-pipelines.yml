@@ -11,119 +11,144 @@ variables:
   frontPath: './EmployeeCrudAngular'
 
 stages:
-- stage: BuildAndTest
-  displayName: "Build and Test API and Front"
-  jobs:
-  - job: BuildDotnet
-    displayName: "Build and Test API"
-    pool:
-      vmImage: 'windows-latest'
-    steps:
-    - checkout: self
-      fetchDepth: 0
+  - stage: PrepareSonarCloud
+    displayName: 'Prepare SonarCloud'
+    jobs:
+      - job: PrepareSonarCloud
+        steps:
+          - task: SonarCloudPrepare@2
+            inputs:
+              SonarCloud: 'SonarCloud'
+              organization: 'francotallone'
+              scannerMode: 'MSBuild'
+              projectKey: 'francotallone_TP7'
+              projectName: 'TP7'
 
-    # Instalar .NET 8 SDK
-    - task: UseDotNet@2
-      displayName: 'Instalar .NET 8.0 SDK'
-      inputs:
-        packageType: 'sdk'
-        version: '8.x' # Instalar la última versión de .NET 8
-        installationPath: $(Agent.ToolsDirectory)/dotnet
-
-    # Restaurar paquetes NuGet
-    - task: DotNetCoreCLI@2
-      displayName: 'Restaurar paquetes NuGet'
-      inputs:
-        command: restore
-        projects: '$(solution)'
-
-    # Ejecutar pruebas de la API
-    - task: DotNetCoreCLI@2
-      displayName: 'Ejecutar pruebas de la API'
-      inputs:
-        command: 'test'
-        projects: '**/*.Tests.csproj'
-        arguments: '--collect:"XPlat Code Coverage"'
-
-    # Publicar resultados de code coverage del back-end
-    - task: PublishCodeCoverageResults@2
-      displayName: 'Publicar resultados de code coverage del back-end'
-      inputs:
-        summaryFileLocation: '$(Agent.TempDirectory)/**/*.cobertura.xml'
-        failIfCoverageEmpty: false
-
-    # Compilar la API
-    - task: DotNetCoreCLI@2
-      displayName: 'Compilar la API'
-      inputs:
-        command: build
-        projects: '$(solution)'
-        arguments: '--configuration $(buildConfiguration)'
-
-    # Publicar aplicación .NET
-    - task: DotNetCoreCLI@2
-      displayName: 'Publicar aplicación'
-      inputs:
-        command: publish
-        publishWebProjects: True
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-        zipAfterPublish: true
-
-    # Publicar artefactos de compilación
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publicar artefactos de compilación'
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'api-drop'
-        publishLocation: 'Container'
-
-  - job: BuildAngular
-    displayName: "Build and Test Angular"
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    # Instalar Node.js
-    - task: NodeTool@0
-      displayName: 'Instalar Node.js'
-      inputs:
-        versionSpec: '22.x'
+  - stage: BuildAndTest
+    displayName: "Build and Test API and Front"
+    jobs:
+      - job: BuildDotnet
+        displayName: "Build and Test API"
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 0
+            
+          # Análisis SonarCloud
+          - task: SonarCloudAnalyze@2
+            inputs:
+              jdkversion: 'JAVA_HOME_17_X64'
     
-    # Instalar dependencias
-    - script: npm install
-      displayName: 'Instalar dependencias'
-      workingDirectory: $(frontPath)
+          - task: SonarCloudPublish@2
+            inputs:
+              pollingTimeoutSec: '300'
 
-    # Ejecutar pruebas del front con cobertura
-    - script: npx ng test --karma-config=karma.conf.js --watch=false --browsers ChromeHeadless --code-coverage
-      displayName: 'Ejecutar pruebas del front'
-      workingDirectory: $(frontPath)
-      continueOnError: true
+          # Instalar .NET 8 SDK
+          - task: UseDotNet@2
+            displayName: 'Instalar .NET 8.0 SDK'
+            inputs:
+              packageType: 'sdk'
+              version: '8.x'
+              installationPath: $(Agent.ToolsDirectory)/dotnet
 
-    # Publicar resultados de code coverage del front
-    - task: PublishCodeCoverageResults@2
-      displayName: 'Publicar resultados de code coverage del front'
-      inputs:
-        summaryFileLocation: '$(frontPath)/coverage/lcov.info'
-        failIfCoverageEmpty: false
-      condition: always()
+          # Restaurar paquetes NuGet
+          - task: DotNetCoreCLI@2
+            displayName: 'Restaurar paquetes NuGet'
+            inputs:
+              command: restore
+              projects: '$(solution)'
 
-    # Publicar resultados de pruebas unitarias del front
-    - task: PublishTestResults@2
-      displayName: 'Publicar resultados de pruebas unitarias del front'
-      inputs:
-        testResultsFormat: 'JUnit'
-        testResultsFiles: '$(frontPath)/test-results/test-results.xml'
-        failTaskOnFailedTests: true
-      condition: always()
+          # Ejecutar pruebas de la API
+          - task: DotNetCoreCLI@2
+            displayName: 'Ejecutar pruebas de la API'
+            inputs:
+              command: 'test'
+              projects: '**/*.Tests.csproj'
+              arguments: '--collect:"XPlat Code Coverage"'
 
-    # Compilar el proyecto Angular
-    - script: npm run build
-      displayName: 'Compilar el proyecto Angular'
-      workingDirectory: $(frontPath)
+          # Publicar resultados de code coverage del back-end
+          - task: PublishCodeCoverageResults@2
+            displayName: 'Publicar resultados de code coverage del back-end'
+            inputs:
+              summaryFileLocation: '$(Agent.TempDirectory)/**/*.cobertura.xml'
+              failIfCoverageEmpty: false
 
-    # Publicar artefactos Angular
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publicar artefactos Angular'
-      inputs:
-        PathtoPublish: '$(frontPath)/dist'
-        ArtifactName: 'front-drop'
+          # Compilar la API
+          - task: DotNetCoreCLI@2
+            displayName: 'Compilar la API'
+            inputs:
+              command: build
+              projects: '$(solution)'
+              arguments: '--configuration $(buildConfiguration)'
+
+          # Publicar aplicación .NET
+          - task: DotNetCoreCLI@2
+            displayName: 'Publicar aplicación'
+            inputs:
+              command: publish
+              publishWebProjects: True
+              arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+              zipAfterPublish: true
+
+          # Publicar artefactos de compilación
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publicar artefactos de compilación'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'api-drop'
+              publishLocation: 'Container'
+
+      - job: BuildAngular
+        displayName: "Build and Test Angular"
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          # Instalar Node.js
+          - task: NodeTool@0
+            displayName: 'Instalar Node.js'
+            inputs:
+              versionSpec: '22.x'
+    
+          # Instalar dependencias
+          - script: npm install
+            displayName: 'Instalar dependencias'
+            workingDirectory: $(frontPath)
+
+          # Ejecutar pruebas del front con cobertura
+          - script: npx ng test --karma-config=karma.conf.js --watch=false --browsers ChromeHeadless --code-coverage
+            displayName: 'Ejecutar pruebas del front'
+            workingDirectory: $(frontPath)
+            continueOnError: true
+
+          # Publicar resultados de code coverage del front
+          - task: PublishCodeCoverageResults@2
+            displayName: 'Publicar resultados de code coverage del front'
+            inputs:
+              summaryFileLocation: '$(frontPath)/coverage/lcov.info'
+              failIfCoverageEmpty: false
+            condition: always()
+
+          # Publicar resultados de pruebas unitarias del front
+          - task: PublishTestResults@2
+            displayName: 'Publicar resultados de pruebas unitarias del front'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '$(frontPath)/test-results/test-results.xml'
+              failTaskOnFailedTests: true
+            condition: always()
+
+          # Compilar el proyecto Angular
+          - script: npm run build
+            displayName: 'Compilar el proyecto Angular'
+            workingDirectory: $(frontPath)
+
+          # Publicar artefactos Angular
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publicar artefactos Angular'
+            inputs:
+              PathtoPublish: '$(frontPath)/dist'
+              ArtifactName: 'front-drop'
