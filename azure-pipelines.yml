@@ -100,7 +100,7 @@ stages:
           - task: PublishPipelineArtifact@1
             displayName: 'Publicar Dockerfile de Back'
             inputs:
-              targetPath: '$(Build.SourcesDirectory)/docker/api/dockerfile'
+              targetPath: '$(Build.SourcesDirectory)/docker/api/Dockerfile'
               artifact: 'dockerfile-back'
 
       - job: BuildAngular
@@ -161,5 +161,5 @@ stages:
           - task: PublishPipelineArtifact@1
             displayName: 'Publicar Dockerfile de Front'
             inputs:
-              targetPath: '$(Build.SourcesDirectory)/docker/front/dockerfile'
+              targetPath: '$(Build.SourcesDirectory)/docker/front/Dockerfile'
               artifact: 'dockerfile-front'
