@@ -96,6 +96,13 @@ stages:
             inputs:
               pollingTimeoutSec: '300'
 
+          # Publicar Dockerfile de Back
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publicar Dockerfile de Back'
+            inputs:
+              targetPath: '$(Build.SourcesDirectory)/docker/api/dockerfile'
+              artifact: 'dockerfile-back'
+
       - job: BuildAngular
         displayName: "Build and Test Angular"
         pool:
@@ -149,3 +156,10 @@ stages:
             inputs:
               PathtoPublish: '$(frontPath)/dist'
               ArtifactName: 'front-drop'
+
+          # Publicar Dockerfile de Front
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publicar Dockerfile de Front'
+            inputs:
+              targetPath: '$(Build.SourcesDirectory)/docker/front/dockerfile'
+              artifact: 'dockerfile-front'
