@@ -12,6 +12,7 @@ variables:
   ConnectedServiceName: 'ServiceConnectionARM'
   acrLoginServer: 'ftmingsoft3uccacr.azurecr.io'
   backImageName: 'employee-crud-api'
+  frontImageName: 'employee-crud-front'
 
 stages:
   - stage: BuildAndAnalyze
@@ -223,4 +224,38 @@ stages:
             inputs:
               command: push
               repository: $(acrLoginServer)/$(backImageName)
+              tags: 'latest'
+
+          #----------------------------------------------------------
+          # BUILD DOCKER FRONT IMAGE Y PUSH A AZURE CONTAINER REGISTRY
+          #----------------------------------------------------------
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Descargar Artefactos de Front'
+            inputs:
+              buildType: 'current'
+              artifactName: 'front-drop'
+              targetPath: '$(Pipeline.Workspace)/front-drop'
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Descargar Dockerfile de Front'
+            inputs:
+              buildType: 'current'
+              artifactName: 'dockerfile-front'
+              targetPath: '$(Pipeline.Workspace)/dockerfile-front'
+
+          - task: Docker@2
+            displayName: 'Construir Imagen Docker para Front'
+            inputs:
+              command: build
+              repository: $(acrLoginServer)/$(frontImageName)
+              dockerfile: $(Pipeline.Workspace)/dockerfile-front/Dockerfile
+              buildContext: $(Pipeline.Workspace)/front-drop
+              tags: 'latest'
+
+          - task: Docker@2
+            displayName: 'Subir Imagen Docker de Front a ACR'
+            inputs:
+              command: push
+              repository: $(acrLoginServer)/$(frontImageName)
               tags: 'latest'
