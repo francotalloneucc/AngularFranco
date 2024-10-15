@@ -8,8 +8,10 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copiar los archivos compilados de Angular al directorio de nginx
-COPY ./ .
+COPY . .
 
 # Exponer el puerto 80 para servir la aplicación Angular
 EXPOSE 80
+
+# Inyectar la variable de entorno para la URL de la API en tiempo de ejecución
 CMD sh -c 'echo "window[\"env\"] = { apiUrl: \"'$API_URL'\" };" > /usr/share/nginx/html/assets/env.js && nginx -g "daemon off;"'
