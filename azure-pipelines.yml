@@ -307,7 +307,7 @@ stages:
                   --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
                   --dns-name-label $(backContainerInstanceNameQA) \
                   --ports 80 \
-                  --environment-variables ConnectionStrings__DefaultConnection="$(cnn-string-qa)" \
+                  --environment-variables ConnectionStrings__DefaultConnection="$(cnn_string_qa)" \
                   --restart-policy Always \
                   --cpu $(container-cpu-api-qa) \
                   --memory $(container-memory-api-qa)
