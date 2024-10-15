@@ -9,6 +9,9 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   frontPath: './EmployeeCrudAngular'
+  ConnectedServiceName: 'ServiceConnectionARM' #Por ejemplo 'ServiceConnectionARM'
+  acrLoginServer: 'ftmingsoft3uccacr.azurecr.io' #Por ejemplo 'ascontainerregistry.azurecr.io'
+  backImageName: 'employee-crud-api' #Por ejemplo 'employee-crud-api'
 
 stages:
   - stage: BuildAndAnalyze
