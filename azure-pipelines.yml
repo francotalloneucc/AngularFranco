@@ -13,6 +13,11 @@ variables:
   acrLoginServer: 'ftmingsoft3uccacr.azurecr.io'
   backImageName: 'employee-crud-api'
   frontImageName: 'employee-crud-front'
+  ResourceGroupName: 'TPSIngSoft3UCC2024' #Por ejemplo 'TPS_INGSOFT3_UCC'
+  backContainerInstanceNameQA: 'ftm-crud-api-qa' #Por ejemplo 'as-crud-api-qa'
+  backImageTag: 'latest' 
+  container-cpu-api-qa: 1 #CPUS de nuestro container de QA
+  container-memory-api-qa: 1.5 #RAM de nuestro container de QA
 
 stages:
   - stage: BuildAndAnalyze
@@ -259,3 +264,50 @@ stages:
               command: push
               repository: $(acrLoginServer)/$(frontImageName)
               tags: 'latest'
+
+#----------------------------------------------------------
+# ### STAGE DEPLOY TO ACI QA
+#----------------------------------------------------------
+
+  - stage: DeployToACIQA
+    displayName: 'Desplegar en Azure Container Instances (ACI) QA'
+    dependsOn: DockerBuildAndPush
+    jobs:
+      - job: deploy_to_aci_qa
+        displayName: 'Desplegar en Azure Container Instances (ACI) QA'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          #------------------------------------------------------
+          # DEPLOY DOCKER BACK IMAGE A AZURE CONTAINER INSTANCES QA
+          #------------------------------------------------------
+
+          - task: AzureCLI@2
+            displayName: 'Desplegar Imagen Docker de Back en ACI QA'
+            inputs:
+              azureSubscription: '$(ConnectedServiceName)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                echo "Resource Group: $(ResourceGroupName)"
+                echo "Container Instance Name: $(backContainerInstanceNameQA)"
+                echo "ACR Login Server: $(acrLoginServer)"
+                echo "Image Name: $(backImageName)"
+                echo "Image Tag: $(backImageTag)"
+                echo "Connection String: $(cnn-string-qa)"
+            
+                az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes
+  
+                az container create --resource-group $(ResourceGroupName) \
+                  --name $(backContainerInstanceNameQA) \
+                  --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
+                  --registry-login-server $(acrLoginServer) \
+                  --registry-username $(acrName) \
+                  --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
+                  --dns-name-label $(backContainerInstanceNameQA) \
+                  --ports 80 \
+                  --environment-variables ConnectionStrings__DefaultConnection="$(cnn-string-qa)" \
+                  --restart-policy Always \
+                  --cpu $(container-cpu-api-qa) \
+                  --memory $(container-memory-api-qa)
