@@ -170,9 +170,10 @@ stages:
   #----------------------------------------------------------
   # STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
   #----------------------------------------------------------
+
   - stage: DockerBuildAndPush
     displayName: 'Construir y Subir Imágenes Docker a ACR'
-    dependsOn: BuildAndAnalyze  # Depende de la etapa de Build y Test
+    dependsOn: BuildAndAnalyze
     jobs:
       - job: docker_build_and_push
         displayName: 'Construir y Subir Imágenes Docker a ACR'
@@ -182,15 +183,14 @@ stages:
         steps:
           - checkout: self
 
-          # Descargar artefactos de back-end
+          # Descargar artefactos de Back
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Artefactos de Back'
             inputs:
               buildType: 'current'
               artifactName: 'api-drop'
-              targetPath: '$(Pipeline.Workspace)/drop-back'
-
-          # Descargar Dockerfile de Back
+              targetPath: '$(Pipeline.Workspace)/api-drop'
+       
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Dockerfile de Back'
             inputs:
@@ -208,17 +208,17 @@ stages:
               inlineScript: |
                 az acr login --name $(acrLoginServer)
 
-          # Construir imagen Docker para Back
+          # Construir Imagen Docker para Back
           - task: Docker@2
             displayName: 'Construir Imagen Docker para Back'
             inputs:
               command: build
               repository: $(acrLoginServer)/$(backImageName)
               dockerfile: $(Pipeline.Workspace)/dockerfile-back/Dockerfile
-              buildContext: $(Pipeline.Workspace)/drop-back
+              buildContext: $(Pipeline.Workspace)/api-drop
               tags: 'latest'
 
-          # Subir imagen Docker de Back a ACR
+          # Subir Imagen Docker de Back a ACR
           - task: Docker@2
             displayName: 'Subir Imagen Docker de Back a ACR'
             inputs:
