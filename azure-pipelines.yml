@@ -18,6 +18,7 @@ variables:
   backImageTag: 'latest' 
   container-cpu-api-qa: 1 #CPUS de nuestro container de QA
   container-memory-api-qa: 1.5 #RAM de nuestro container de QA
+  acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
 
 stages:
   - stage: BuildAndAnalyze
