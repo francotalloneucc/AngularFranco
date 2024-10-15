@@ -295,10 +295,10 @@ stages:
                 echo "ACR Login Server: $(acrLoginServer)"
                 echo "Image Name: $(backImageName)"
                 echo "Image Tag: $(backImageTag)"
-                echo "Connection String: $(cnn-string-qa)"
-            
+                echo "Connection String: $(cnn_string_qa)"
+                
                 az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes
-  
+
                 az container create --resource-group $(ResourceGroupName) \
                   --name $(backContainerInstanceNameQA) \
                   --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
