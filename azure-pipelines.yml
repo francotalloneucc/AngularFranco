@@ -9,9 +9,9 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   frontPath: './EmployeeCrudAngular'
-  ConnectedServiceName: 'ServiceConnectionARM' #Por ejemplo 'ServiceConnectionARM'
-  acrLoginServer: 'ftmingsoft3uccacr.azurecr.io' #Por ejemplo 'ascontainerregistry.azurecr.io'
-  backImageName: 'employee-crud-api' #Por ejemplo 'employee-crud-api'
+  ConnectedServiceName: 'ServiceConnectionARM'
+  acrLoginServer: 'ftmingsoft3uccacr.azurecr.io'
+  backImageName: 'employee-crud-api'
 
 stages:
   - stage: BuildAndAnalyze
@@ -166,3 +166,62 @@ stages:
             inputs:
               targetPath: '$(Build.SourcesDirectory)/docker/front/Dockerfile'
               artifact: 'dockerfile-front'
+
+  #----------------------------------------------------------
+  # STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
+  #----------------------------------------------------------
+  - stage: DockerBuildAndPush
+    displayName: 'Construir y Subir Imágenes Docker a ACR'
+    dependsOn: BuildAndAnalyze  # Depende de la etapa de Build y Test
+    jobs:
+      - job: docker_build_and_push
+        displayName: 'Construir y Subir Imágenes Docker a ACR'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          - checkout: self
+
+          # Descargar artefactos de back-end
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Descargar Artefactos de Back'
+            inputs:
+              buildType: 'current'
+              artifactName: 'api-drop'
+              targetPath: '$(Pipeline.Workspace)/drop-back'
+
+          # Descargar Dockerfile de Back
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Descargar Dockerfile de Back'
+            inputs:
+              buildType: 'current'
+              artifactName: 'dockerfile-back'
+              targetPath: '$(Pipeline.Workspace)/dockerfile-back'
+
+          # Iniciar sesión en Azure Container Registry (ACR)
+          - task: AzureCLI@2
+            displayName: 'Iniciar Sesión en Azure Container Registry (ACR)'
+            inputs:
+              azureSubscription: '$(ConnectedServiceName)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az acr login --name $(acrLoginServer)
+
+          # Construir imagen Docker para Back
+          - task: Docker@2
+            displayName: 'Construir Imagen Docker para Back'
+            inputs:
+              command: build
+              repository: $(acrLoginServer)/$(backImageName)
+              dockerfile: $(Pipeline.Workspace)/dockerfile-back/Dockerfile
+              buildContext: $(Pipeline.Workspace)/drop-back
+              tags: 'latest'
+
+          # Subir imagen Docker de Back a ACR
+          - task: Docker@2
+            displayName: 'Subir Imagen Docker de Back a ACR'
+            inputs:
+              command: push
+              repository: $(acrLoginServer)/$(backImageName)
+              tags: 'latest'
