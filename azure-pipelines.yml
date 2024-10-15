@@ -167,10 +167,9 @@ stages:
               targetPath: '$(Build.SourcesDirectory)/docker/front/Dockerfile'
               artifact: 'dockerfile-front'
 
-  #----------------------------------------------------------
-  # STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
-  #----------------------------------------------------------
-
+#----------------------------------------------------------
+# ### STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
+#----------------------------------------------------------
   - stage: DockerBuildAndPush
     displayName: 'Construir y Subir Imágenes Docker a ACR'
     dependsOn: BuildAndAnalyze
@@ -183,14 +182,17 @@ stages:
         steps:
           - checkout: self
 
-          # Descargar artefactos de Back
+          #----------------------------------------------------------
+          # BUILD DOCKER BACK IMAGE Y PUSH A AZURE CONTAINER REGISTRY
+          #----------------------------------------------------------
+
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Artefactos de Back'
             inputs:
               buildType: 'current'
               artifactName: 'api-drop'
               targetPath: '$(Pipeline.Workspace)/api-drop'
-       
+
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Dockerfile de Back'
             inputs:
@@ -198,7 +200,6 @@ stages:
               artifactName: 'dockerfile-back'
               targetPath: '$(Pipeline.Workspace)/dockerfile-back'
 
-          # Iniciar sesión en Azure Container Registry (ACR)
           - task: AzureCLI@2
             displayName: 'Iniciar Sesión en Azure Container Registry (ACR)'
             inputs:
@@ -208,7 +209,6 @@ stages:
               inlineScript: |
                 az acr login --name $(acrLoginServer)
 
-          # Construir Imagen Docker para Back
           - task: Docker@2
             displayName: 'Construir Imagen Docker para Back'
             inputs:
@@ -218,7 +218,6 @@ stages:
               buildContext: $(Pipeline.Workspace)/api-drop
               tags: 'latest'
 
-          # Subir Imagen Docker de Back a ACR
           - task: Docker@2
             displayName: 'Subir Imagen Docker de Back a ACR'
             inputs:
