@@ -295,22 +295,16 @@ stages:
                 echo "ACR Login Server: $(acrLoginServer)"
                 echo "Image Name: $(backImageName)"
                 echo "Image Tag: $(backImageTag)"
-                echo "Connection String: $(cnn_string_qa)"
-
-                # Eliminar la instancia de contenedor si existe
-                az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes --no-wait
-
-                # Obtener las credenciales del ACR
-                ACR_USERNAME=$(az acr credential show --name $(acrLoginServer) --query "username" --output tsv)
-                ACR_PASSWORD=$(az acr credential show --name $(acrLoginServer) --query "passwords[0].value" --output tsv)
-
-                # Crear la instancia de contenedor
+                echo "Connection String: $(cnn-string-qa)"
+            
+                az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes
+  
                 az container create --resource-group $(ResourceGroupName) \
                   --name $(backContainerInstanceNameQA) \
                   --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
                   --registry-login-server $(acrLoginServer) \
-                  --registry-username $ACR_USERNAME \
-                  --registry-password $ACR_PASSWORD \
+                  --registry-username $(acrName) \
+                  --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
                   --dns-name-label $(backContainerInstanceNameQA) \
                   --ports 80 \
                   --environment-variables ConnectionStrings__DefaultConnection="$(cnn_string_qa)" \
