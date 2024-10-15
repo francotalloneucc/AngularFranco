@@ -1,10 +1,9 @@
- # Imagen base para ejecutar la aplicación
+# Imagen base para ejecutar la aplicación
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
 # Copiar los binarios preconstruidos de la API al contenedor
-# Espera que los binarios estén en la carpeta "api" en el contexto de construcción
-COPY ./api/ ./
+COPY . ./
 
 # Exponer los puertos 80 (HTTP) y 443 (HTTPS)
 EXPOSE 80
