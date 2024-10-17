@@ -297,16 +297,6 @@ stages:
           vmImage: 'ubuntu-latest'
         steps:
           - task: AzureCLI@2
-            displayName: 'Listar imágenes en ACR'
-            inputs:
-              azureSubscription: '$(ConnectedServiceName)'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                echo "Listando imágenes en ACR..."
-                az acr repository list --name $(acrName) --output table
-
-          - task: AzureCLI@2
             displayName: 'Desplegar API en ACI'
             inputs:
               azureSubscription: '$(ConnectedServiceName)'
@@ -324,22 +314,12 @@ stages:
                   --registry-password $(ACR_PASSWORD) \
                   --os-type Linux \
                   --restart-policy Always
-
+                
       - job: DeployFront
         displayName: 'Desplegar Front en ACI'
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - task: AzureCLI@2
-            displayName: 'Listar imágenes en ACR (Front)'
-            inputs:
-              azureSubscription: '$(ConnectedServiceName)'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                echo "Listando imágenes en ACR para el Front..."
-                az acr repository list --name $(acrName) --output table
-
           - task: AzureCLI@2
             displayName: 'Desplegar Front en ACI'
             inputs:
