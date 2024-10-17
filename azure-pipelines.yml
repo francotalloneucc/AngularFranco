@@ -207,6 +207,10 @@ stages:
               artifactName: 'dockerfile-back'
               targetPath: '$(Pipeline.Workspace)/dockerfile-back'
 
+          - script: ls -lR $(Pipeline.Workspace)/api-drop
+            displayName: 'Listar archivos en api-drop'
+
+
           - task: AzureCLI@2
             displayName: 'Iniciar Sesión en Azure Container Registry (ACR)'
             inputs:
