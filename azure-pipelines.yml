@@ -79,6 +79,11 @@ stages:
               projects: '$(solution)'
               arguments: '--configuration $(buildConfiguration)'
 
+          - script: |
+              mkdir -p $(Pipeline.Workspace)/dockerfile-back/EmployeeCrudApi
+              cp -r $(Build.SourcesDirectory)/EmployeeCrudApi/* $(Pipeline.Workspace)/dockerfile-back/EmployeeCrudApi/
+            displayName: 'Copiar contenido de EmployeeCrudApi a dockerfile-back'
+
           # Publicar aplicación .NET
           - task: DotNetCoreCLI@2
             displayName: 'Publicar aplicación'
