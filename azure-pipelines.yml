@@ -19,6 +19,10 @@ variables:
   container-cpu-api-qa: 1 #CPUS de nuestro container de QA
   container-memory-api-qa: 1.5 #RAM de nuestro container de QA
   acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
+  frontContainerInstanceNameQA: 'ftm-crud-front-qa'  # Asigna el nombre de tu contenedor del front aquí
+  container-cpu-front-qa: 1  # Cantidad de CPU para el front
+  container-memory-front-qa: 1.5  # Memoria en GB para el front
+  ACR_PASSWORD: $(ACR_PASSWORD)  # Asegúrate de que esta variable esté configurada como secreto en tu pipeline
 
 stages:
   - stage: BuildAndAnalyze
