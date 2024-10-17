@@ -13,12 +13,12 @@ variables:
   acrLoginServer: 'ftmingsoft3uccacr.azurecr.io'
   backImageName: 'employee-crud-api'
   frontImageName: 'employee-crud-front'
-  ResourceGroupName: 'TPSIngSoft3UCC2024' # Por ejemplo 'TPS_INGSOFT3_UCC'
-  backContainerInstanceNameQA: 'ftm-crud-api-qa' # Por ejemplo 'as-crud-api-qa'
+  ResourceGroupName: 'TPSIngSoft3UCC2024'
+  backContainerInstanceNameQA: 'ftm-crud-api-qa'
   backImageTag: 'latest' 
-  container-cpu-api-qa: 1 # CPUs de nuestro container de QA
-  container-memory-api-qa: 1.5 # RAM de nuestro container de QA
-  acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
+  container-cpu-api-qa: 1 
+  container-memory-api-qa: 1.5 
+  acrName: 'ftmingsoft3uccacr' 
 
 stages:
   - stage: BuildAndAnalyze
@@ -174,10 +174,9 @@ stages:
               targetPath: '$(Build.SourcesDirectory)/docker/front/Dockerfile'
               artifact: 'dockerfile-front'
 
-# ----------------------------------------------------------
-# STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
-# ----------------------------------------------------------
-
+#----------------------------------------------------------
+# ### STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
+#----------------------------------------------------------
   - stage: DockerBuildAndPush
     displayName: 'Construir y Subir Imágenes Docker a ACR'
     dependsOn: BuildAndAnalyze
@@ -190,7 +189,15 @@ stages:
         steps:
           - checkout: self
 
-          # Descargar los artefactos de la API generados en la etapa anterior
+          # Agregar tarea para actualizar la CLI de Azure
+          - script: |
+              az upgrade --yes
+            displayName: 'Actualizar CLI de Azure'
+
+          #----------------------------------------------------------
+          # BUILD DOCKER BACK IMAGE Y PUSH A AZURE CONTAINER REGISTRY
+          #----------------------------------------------------------
+
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Artefactos de Back'
             inputs:
@@ -198,7 +205,6 @@ stages:
               artifactName: 'api-drop'
               targetPath: '$(Pipeline.Workspace)/api-drop'
 
-          # Descargar Dockerfile de Back
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Dockerfile de Back'
             inputs:
@@ -206,13 +212,6 @@ stages:
               artifactName: 'dockerfile-back'
               targetPath: '$(Pipeline.Workspace)/dockerfile-back'
 
-          # Copiar el contenido de api-drop (archivos de la API) a la carpeta docker/api
-          - script: |
-              mkdir -p $(Pipeline.Workspace)/dockerfile-back/api
-              cp -r $(Pipeline.Workspace)/api-drop/* $(Pipeline.Workspace)/dockerfile-back/api/
-            displayName: 'Copiar archivos de API a la carpeta docker/api'
-
-          # Iniciar sesión en Azure Container Registry (ACR)
           - task: AzureCLI@2
             displayName: 'Iniciar Sesión en Azure Container Registry (ACR)'
             inputs:
@@ -222,17 +221,15 @@ stages:
               inlineScript: |
                 az acr login --name $(acrLoginServer)
 
-          # Construir la imagen Docker del back
           - task: Docker@2
             displayName: 'Construir Imagen Docker para Back'
             inputs:
               command: build
               repository: $(acrLoginServer)/$(backImageName)
               dockerfile: $(Pipeline.Workspace)/dockerfile-back/Dockerfile
-              buildContext: $(Pipeline.Workspace)/dockerfile-back/api
+              buildContext: $(Pipeline.Workspace)/api-drop
               tags: 'latest'
 
-          # Subir la imagen Docker del back a ACR
           - task: Docker@2
             displayName: 'Subir Imagen Docker de Back a ACR'
             inputs:
@@ -240,7 +237,10 @@ stages:
               repository: $(acrLoginServer)/$(backImageName)
               tags: 'latest'
 
-          # Descargar los artefactos de front generados en la etapa anterior
+          #----------------------------------------------------------
+          # BUILD DOCKER FRONT IMAGE Y PUSH A AZURE CONTAINER REGISTRY
+          #----------------------------------------------------------
+
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Artefactos de Front'
             inputs:
@@ -248,7 +248,6 @@ stages:
               artifactName: 'front-drop'
               targetPath: '$(Pipeline.Workspace)/front-drop'
 
-          # Descargar Dockerfile de Front
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Dockerfile de Front'
             inputs:
@@ -256,23 +255,15 @@ stages:
               artifactName: 'dockerfile-front'
               targetPath: '$(Pipeline.Workspace)/dockerfile-front'
 
-          # Copiar el contenido de front-drop a la carpeta docker/front
-          - script: |
-              mkdir -p $(Pipeline.Workspace)/dockerfile-front/front
-              cp -r $(Pipeline.Workspace)/front-drop/* $(Pipeline.Workspace)/dockerfile-front/front/
-            displayName: 'Copiar archivos de Front a la carpeta docker/front'
-
-          # Construir la imagen Docker del front
           - task: Docker@2
             displayName: 'Construir Imagen Docker para Front'
             inputs:
               command: build
               repository: $(acrLoginServer)/$(frontImageName)
               dockerfile: $(Pipeline.Workspace)/dockerfile-front/Dockerfile
-              buildContext: $(Pipeline.Workspace)/dockerfile-front/front
+              buildContext: $(Pipeline.Workspace)/front-drop
               tags: 'latest'
 
-          # Subir la imagen Docker del front a ACR
           - task: Docker@2
             displayName: 'Subir Imagen Docker de Front a ACR'
             inputs:
@@ -280,60 +271,26 @@ stages:
               repository: $(acrLoginServer)/$(frontImageName)
               tags: 'latest'
 
-# ----------------------------------------------------------
-# STAGE DEPLOY QA
-# ----------------------------------------------------------
-
+#----------------------------------------------------------
+# ### STAGE DEPLOY A QA
+#----------------------------------------------------------
   - stage: DeployQA
-    displayName: 'Desplegar API en QA'
+    displayName: 'Deploy en QA'
     dependsOn: DockerBuildAndPush
     jobs:
-      - deployment: DeployToQA
-        displayName: 'Desplegar en QA'
-        environment: 'qa'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                # Iniciar sesión en Azure
-                - task: AzureCLI@2
-                  displayName: 'Iniciar Sesión en Azure'
-                  inputs:
-                    azureSubscription: '$(ConnectedServiceName)'
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      az login --service-principal -u $(servicePrincipalId) -p $(servicePrincipalKey) --tenant $(tenantId)
-
-                # Crear instancia de contenedor en QA
-                - task: AzureCLI@2
-                  displayName: 'Crear Contenedor de API en QA'
-                  inputs:
-                    azureSubscription: '$(ConnectedServiceName)'
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      az container create \
-                        --resource-group $(ResourceGroupName) \
-                        --name $(backContainerInstanceNameQA) \
-                        --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
-                        --cpu $(container-cpu-api-qa) \
-                        --memory $(container-memory-api-qa) \
-                        --registry-login-server $(acrLoginServer) \
-                        --registry-username $(servicePrincipalId) \
-                        --registry-password $(servicePrincipalKey) \
-                        --dns-name-label $(backContainerInstanceNameQA) \
-                        --ports 80
-
-                # Verificar estado del contenedor
-                - task: AzureCLI@2
-                  displayName: 'Verificar Estado del Contenedor'
-                  inputs:
-                    azureSubscription: '$(ConnectedServiceName)'
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      az container show \
-                        --resource-group $(ResourceGroupName) \
-                        --name $(backContainerInstanceNameQA) \
-                        --query "instanceView.state"
+      - job: DeployBackend
+        displayName: 'Deploy Back-End a QA'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Desplegar Contenedor Back QA'
+            inputs:
+              azureSubscription: '$(ConnectedServiceName)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az container create --resource-group $(ResourceGroupName) \
+                                    --name $(backContainerInstanceNameQA) \
+                                    --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
+                                    --cpu $(container-cpu-api-qa) \
+                                    --memory $(container-memory-api-qa) \
+                                    --dns-name-label $(backContainerInstanceNameQA) --ports 80
