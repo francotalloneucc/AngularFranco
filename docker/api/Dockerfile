@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
 # Copiar el archivo ZIP desde api-drop
-COPY api-drop/EmployeeCrudApi.zip .
+COPY EmployeeCrudApi.zip .
 
 # Instalar unzip y descomprimir el archivo ZIP
 RUN apt-get update && apt-get install -y unzip && unzip EmployeeCrudApi.zip -d /app && rm EmployeeCrudApi.zip
