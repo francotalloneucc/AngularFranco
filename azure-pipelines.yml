@@ -88,12 +88,6 @@ stages:
               arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
               zipAfterPublish: true
 
-          # Copiar el código de EmployeeCrudApi a dockerfile-back
-          - script: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/dockerfile-back
-              cp -R $(Build.SourcesDirectory)/EmployeeCrudApi/* $(Build.ArtifactStagingDirectory)/dockerfile-back/
-            displayName: 'Copiar código de EmployeeCrudApi a dockerfile-back'
-
           # Publicar artefactos de compilación
           - task: PublishBuildArtifacts@1
             displayName: 'Publicar artefactos de compilación'
@@ -101,6 +95,13 @@ stages:
               PathtoPublish: '$(Build.ArtifactStagingDirectory)'
               ArtifactName: 'api-drop'
               publishLocation: 'Container'
+
+          # Copiar el código de EmployeeCrudApi a docker/api
+          - script: |
+              echo "Copiando código de EmployeeCrudApi a docker/api"
+              mkdir -p $(Build.SourcesDirectory)/docker/api
+              cp -r $(Build.SourcesDirectory)/EmployeeCrudApi/* $(Build.SourcesDirectory)/docker/api/
+            displayName: 'Copiar código de EmployeeCrudApi'
 
           # Análisis de código con SonarCloud
           - task: SonarCloudAnalyze@2
@@ -241,6 +242,7 @@ stages:
           #----------------------------------------------------------
           # BUILD DOCKER FRONT IMAGE Y PUSH A AZURE CONTAINER REGISTRY
           #----------------------------------------------------------
+
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Artefactos de Front'
             inputs:
