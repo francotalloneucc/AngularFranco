@@ -88,6 +88,14 @@ stages:
               arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
               zipAfterPublish: true
 
+          # Copiar archivos de EmployeeCrudApi a docker/api
+          - task: CopyFiles@2
+            displayName: 'Copiar archivos de EmployeeCrudApi a docker/api'
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/EmployeeCrudApi'
+              Contents: '**/*'
+              TargetFolder: '$(Build.SourcesDirectory)/docker/api'
+
           # Publicar artefactos de compilación
           - task: PublishBuildArtifacts@1
             displayName: 'Publicar artefactos de compilación'
