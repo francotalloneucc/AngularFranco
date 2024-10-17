@@ -5,7 +5,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  solution: '**/*.sln'
+  solution: '*/.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   frontPath: './EmployeeCrudAngular'
@@ -19,10 +19,6 @@ variables:
   container-cpu-api-qa: 1 #CPUS de nuestro container de QA
   container-memory-api-qa: 1.5 #RAM de nuestro container de QA
   acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
-  frontContainerInstanceNameQA: 'ftm-crud-front-qa'  # Asigna el nombre de tu contenedor del front aquí
-  container-cpu-front-qa: 1  # Cantidad de CPU para el front
-  container-memory-front-qa: 1.5  # Memoria en GB para el front
-  ACR_PASSWORD: $(ACR_PASSWORD)  # Asegúrate de que esta variable esté configurada como secreto en tu pipeline
 
 stages:
   - stage: BuildAndAnalyze
@@ -65,14 +61,14 @@ stages:
             displayName: 'Ejecutar pruebas de la API'
             inputs:
               command: 'test'
-              projects: '**/*.Tests.csproj'
+              projects: '*/.Tests.csproj'
               arguments: '--collect:"XPlat Code Coverage"'
 
           # Publicar resultados de code coverage del back-end
           - task: PublishCodeCoverageResults@2
             displayName: 'Publicar resultados de code coverage del back-end'
             inputs:
-              summaryFileLocation: '$(Agent.TempDirectory)/**/*.cobertura.xml'
+              summaryFileLocation: '$(Agent.TempDirectory)/*/.cobertura.xml'
               failIfCoverageEmpty: false
 
           # Compilar la API
@@ -130,7 +126,7 @@ stages:
             displayName: 'Instalar Node.js'
             inputs:
               versionSpec: '22.x'
-
+    
           # Instalar dependencias
           - script: npm install
             displayName: 'Instalar dependencias'
@@ -181,7 +177,6 @@ stages:
 #----------------------------------------------------------
 # ### STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
 #----------------------------------------------------------
-  
   - stage: DockerBuildAndPush
     displayName: 'Construir y Subir Imágenes Docker a ACR'
     dependsOn: BuildAndAnalyze
@@ -205,24 +200,12 @@ stages:
               artifactName: 'api-drop'
               targetPath: '$(Pipeline.Workspace)/api-drop'
 
-          # Aquí se agrega el paso para copiar el archivo ZIP
-
-          - task: CopyFiles@2
-            displayName: 'Copiar archivo ZIP de API a carpeta de Docker'
-            inputs:
-              SourceFolder: '$(Pipeline.Workspace)/api-drop'
-              Contents: '**/*.zip'
-              TargetFolder: '$(Pipeline.Workspace)/dockerfile-back'
-
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Dockerfile de Back'
             inputs:
               buildType: 'current'
               artifactName: 'dockerfile-back'
               targetPath: '$(Pipeline.Workspace)/dockerfile-back'
-
-          - script: ls -lR $(Pipeline.Workspace)/api-drop
-            displayName: 'Listar archivos en api-drop'
 
           - task: AzureCLI@2
             displayName: 'Iniciar Sesión en Azure Container Registry (ACR)'
@@ -284,57 +267,48 @@ stages:
               tags: 'latest'
 
 #----------------------------------------------------------
-# ### STAGE DEPLOY TO AZURE CONTAINER INSTANCE
+# ### STAGE DEPLOY TO ACI QA
 #----------------------------------------------------------
 
-  - stage: DeployToAzure
-    displayName: 'Desplegar en Azure Container Instance'
+  - stage: DeployToACIQA
+    displayName: 'Desplegar en Azure Container Instances (ACI) QA'
     dependsOn: DockerBuildAndPush
     jobs:
-      - job: DeployApi
-        displayName: 'Desplegar API en ACI'
+      - job: deploy_to_aci_qa
+        displayName: 'Desplegar en Azure Container Instances (ACI) QA'
         pool:
           vmImage: 'ubuntu-latest'
+
         steps:
+          #------------------------------------------------------
+          # DEPLOY DOCKER BACK IMAGE A AZURE CONTAINER INSTANCES QA
+          #------------------------------------------------------
+
           - task: AzureCLI@2
-            displayName: 'Desplegar API en ACI'
+            displayName: 'Desplegar Imagen Docker de Back en ACI QA'
             inputs:
               azureSubscription: '$(ConnectedServiceName)'
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
-                az container create \
-                  --resource-group $(ResourceGroupName) \
+                echo "Resource Group: $(ResourceGroupName)"
+                echo "Container Instance Name: $(backContainerInstanceNameQA)"
+                echo "ACR Login Server: $(acrLoginServer)"
+                echo "Image Name: $(backImageName)"
+                echo "Image Tag: $(backImageTag)"
+                echo "Connection String: $(cnn_string_qa)"
+                
+                az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes
+
+                az container create --resource-group $(ResourceGroupName) \
                   --name $(backContainerInstanceNameQA) \
                   --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
+                  --registry-login-server $(acrLoginServer) \
+                  --registry-username $(acrName) \
+                  --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
+                  --dns-name-label $(backContainerInstanceNameQA) \
+                  --ports 80 \
+                  --environment-variables ConnectionStrings__DefaultConnection="$(cnn_string_qa)" \
+                  --restart-policy Always \
                   --cpu $(container-cpu-api-qa) \
-                  --memory $(container-memory-api-qa) \
-                  --registry-login-server $(acrLoginServer) \
-                  --registry-username $(acrName) \
-                  --registry-password $(ACR_PASSWORD) \
-                  --os-type Linux \
-                  --restart-policy Always
-                
-      - job: DeployFront
-        displayName: 'Desplegar Front en ACI'
-        pool:
-          vmImage: 'ubuntu-latest'
-        steps:
-          - task: AzureCLI@2
-            displayName: 'Desplegar Front en ACI'
-            inputs:
-              azureSubscription: '$(ConnectedServiceName)'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                az container create \
-                  --resource-group $(ResourceGroupName) \
-                  --name $(frontContainerInstanceNameQA) \
-                  --image $(acrLoginServer)/$(frontImageName):$(backImageTag) \
-                  --cpu $(container-cpu-front-qa) \
-                  --memory $(container-memory-front-qa) \
-                  --registry-login-server $(acrLoginServer) \
-                  --registry-username $(acrName) \
-                  --registry-password $(ACR_PASSWORD) \
-                  --os-type Linux \
-                  --restart-policy Always
+                  --memory $(container-memory-api-qa)
