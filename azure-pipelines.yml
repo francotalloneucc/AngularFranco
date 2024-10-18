@@ -21,7 +21,7 @@ variables:
   acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
 
 stages:
-  - stage: BuildAndAnalyze
+  - stage: BuildAndTestBackAndFront
     displayName: 'Build, Test and Analyze API and Front'
     jobs:
       - job: BuildDotnet
@@ -179,7 +179,7 @@ stages:
   #----------------------------------------------------------
   - stage: DockerBuildAndPush
     displayName: 'Construir y Subir Imágenes Docker a ACR'
-    dependsOn: BuildAndAnalyze
+    dependsOn: BuildAndTestBackAndFront
     jobs:
       - job: docker_build_and_push
         displayName: 'Construir y Subir Imágenes Docker a ACR'
@@ -279,7 +279,7 @@ stages:
   #----------------------------------------------------------
   - stage: DeployToACIQA
     displayName: 'Desplegar en Azure Container Instances (ACI) QA'
-    dependsOn: BuildAndAnalyze
+    dependsOn: DockerBuildAndPush
     jobs:
       - job: deploy_to_aci_qa
         displayName: 'Desplegar en Azure Container Instances (ACI) QA'
