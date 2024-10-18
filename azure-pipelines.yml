@@ -93,7 +93,7 @@ stages:
             displayName: 'Publicar artefactos de compilación'
             inputs:
               PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-              ArtifactName: 'api-drop'
+              ArtifactName: 'drop-back'
               publishLocation: 'Container'
 
           # Análisis de código con SonarCloud
