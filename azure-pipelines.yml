@@ -217,7 +217,7 @@ stages:
             inputs:
               command: build
               repository: $(acrLoginServer)/$(backImageName)
-              dockerfile: $(Pipeline.Workspace)/dockerfile-back/dockerfile
+              dockerfile: $(Pipeline.Workspace)/dockerfile-back/Dockerfile
               buildContext: $(Pipeline.Workspace)/drop-back
               tags: 'latest'
 
@@ -264,7 +264,7 @@ stages:
             inputs:
               command: build
               repository: $(acrLoginServer)/$(frontImageName)
-              dockerfile: $(Pipeline.Workspace)/dockerfile-front/dockerfile
+              dockerfile: $(Pipeline.Workspace)/dockerfile-front/Dockerfile
               buildContext: $(Pipeline.Workspace)/drop-front
               tags: 'latest'
 
