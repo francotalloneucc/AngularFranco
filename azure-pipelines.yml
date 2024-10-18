@@ -165,7 +165,7 @@ stages:
             displayName: 'Publicar artefactos Angular'
             inputs:
               PathtoPublish: '$(frontPath)/dist'
-              ArtifactName: 'front-drop'
+              ArtifactName: 'drop-front'
 
           # Publicar Dockerfile de Front
           - task: PublishPipelineArtifact@1
