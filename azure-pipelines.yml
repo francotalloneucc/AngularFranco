@@ -9,17 +9,19 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   frontPath: './EmployeeCrudAngular'
+
+  # AZURE VARIABLES
   ConnectedServiceName: 'ServiceConnectionARM'
   acrLoginServer: 'ftmingsoft3uccacr.azurecr.io'
   backImageName: 'employee-crud-api'
   frontImageName: 'employee-crud-front'
-  ResourceGroupName: 'TPSIngSoft3UCC2024' #Por ejemplo 'TPS_INGSOFT3_UCC'
-  backContainerInstanceNameQA: 'ftm-crud-api-qa' #Por ejemplo 'as-crud-api-qa'
-  backImageTag: 'latest' 
-  container-cpu-api-qa: 1 #CPUS de nuestro container de QA
-  container-memory-api-qa: 1.5 #RAM de nuestro container de QA
-  acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
-  variables:
+  
+  acrName: 'ftmingsoft3uccacr'
+  ResourceGroupName: 'TPSIngSoft3UCC2024'
+  backContainerInstanceNameQA: 'ftm-crud-api-qa'
+  backImageTag: 'latest'
+  container-cpu-api-qa: 1
+  container-memory-api-qa: 1.5
 
 
 
