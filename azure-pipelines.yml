@@ -79,8 +79,9 @@ stages:
             displayName: 'Compilar la API'
             inputs:
               command: build
-              projects: '$(solution)'
+              projects: '$(solution)'  # Se utiliza la variable de solución
               arguments: '--configuration $(buildConfiguration)'
+
 
           # Publicar aplicación .NET
           - task: DotNetCoreCLI@2
