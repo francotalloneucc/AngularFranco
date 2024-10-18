@@ -19,6 +19,9 @@ variables:
   container-cpu-api-qa: 1 #CPUS de nuestro container de QA
   container-memory-api-qa: 1.5 #RAM de nuestro container de QA
   acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
+  variables:
+
+
 
 stages:
   - stage: BuildAndTestBackAndFront
@@ -50,11 +53,11 @@ stages:
               installationPath: $(Agent.ToolsDirectory)/dotnet
 
           # Restaurar paquetes NuGet
-          - task: DotNetCoreCLI@2
+          - task: NuGetCommand@2
             displayName: 'Restaurar paquetes NuGet'
             inputs:
-              command: restore
-              projects: '$(solution)'
+              restoreSolution: '$(solution)'  # Asegúrate de que la variable 'solution' esté definida correctamente
+
 
           # Ejecutar pruebas de la API
           - task: DotNetCoreCLI@2
