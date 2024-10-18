@@ -9,24 +9,19 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   frontPath: './EmployeeCrudAngular'
-
-  # AZURE VARIABLES
   ConnectedServiceName: 'ServiceConnectionARM'
   acrLoginServer: 'ftmingsoft3uccacr.azurecr.io'
   backImageName: 'employee-crud-api'
   frontImageName: 'employee-crud-front'
-  
-  acrName: 'ftmingsoft3uccacr'
-  ResourceGroupName: 'TPSIngSoft3UCC2024'
-  backContainerInstanceNameQA: 'ftm-crud-api-qa'
-  backImageTag: 'latest'
-  container-cpu-api-qa: 1
-  container-memory-api-qa: 1.5
-
-
+  ResourceGroupName: 'TPSIngSoft3UCC2024' #Por ejemplo 'TPS_INGSOFT3_UCC'
+  backContainerInstanceNameQA: 'ftm-crud-api-qa' #Por ejemplo 'as-crud-api-qa'
+  backImageTag: 'latest' 
+  container-cpu-api-qa: 1 #CPUS de nuestro container de QA
+  container-memory-api-qa: 1.5 #RAM de nuestro container de QA
+  acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
 
 stages:
-  - stage: BuildAndTestBackAndFront
+  - stage: BuildAndAnalyze
     displayName: 'Build, Test and Analyze API and Front'
     jobs:
       - job: BuildDotnet
@@ -55,11 +50,11 @@ stages:
               installationPath: $(Agent.ToolsDirectory)/dotnet
 
           # Restaurar paquetes NuGet
-          - task: NuGetCommand@2
+          - task: DotNetCoreCLI@2
             displayName: 'Restaurar paquetes NuGet'
             inputs:
-              restoreSolution: '$(solution)'  # Asegúrate de que la variable 'solution' esté definida correctamente
-
+              command: restore
+              projects: '$(solution)'
 
           # Ejecutar pruebas de la API
           - task: DotNetCoreCLI@2
@@ -81,9 +76,8 @@ stages:
             displayName: 'Compilar la API'
             inputs:
               command: build
-              projects: '$(solution)'  # Se utiliza la variable de solución
+              projects: '$(solution)'
               arguments: '--configuration $(buildConfiguration)'
-
 
           # Publicar aplicación .NET
           - task: DotNetCoreCLI@2
@@ -181,27 +175,31 @@ stages:
               artifact: 'dockerfile-front'
 
 #----------------------------------------------------------
-  # ### STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
-  #----------------------------------------------------------
+# ### STAGE BUILD DOCKER IMAGES Y PUSH A AZURE CONTAINER REGISTRY
+#----------------------------------------------------------
   - stage: DockerBuildAndPush
     displayName: 'Construir y Subir Imágenes Docker a ACR'
-    dependsOn: BuildAndTestBackAndFront
+    dependsOn: BuildAndAnalyze
     jobs:
       - job: docker_build_and_push
         displayName: 'Construir y Subir Imágenes Docker a ACR'
         pool:
           vmImage: 'ubuntu-latest'
-          
+
         steps:
           - checkout: self
+
+          #----------------------------------------------------------
+          # BUILD DOCKER BACK IMAGE Y PUSH A AZURE CONTAINER REGISTRY
+          #----------------------------------------------------------
 
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Artefactos de Back'
             inputs:
               buildType: 'current'
-              artifactName: 'drop-back'
-              targetPath: '$(Pipeline.Workspace)/drop-back'
-          
+              artifactName: 'api-drop'
+              targetPath: '$(Pipeline.Workspace)/api-drop'
+
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Dockerfile de Back'
             inputs:
@@ -217,14 +215,14 @@ stages:
               scriptLocation: inlineScript
               inlineScript: |
                 az acr login --name $(acrLoginServer)
-      
+
           - task: Docker@2
             displayName: 'Construir Imagen Docker para Back'
             inputs:
               command: build
               repository: $(acrLoginServer)/$(backImageName)
-              dockerfile: $(Pipeline.Workspace)/dockerfile-back/dockerfile
-              buildContext: $(Pipeline.Workspace)/drop-back
+              dockerfile: $(Pipeline.Workspace)/dockerfile-back/Dockerfile
+              buildContext: $(Pipeline.Workspace)/api-drop
               tags: 'latest'
 
           - task: Docker@2
@@ -234,21 +232,17 @@ stages:
               repository: $(acrLoginServer)/$(backImageName)
               tags: 'latest'
 
-      - job: docker_build_and_push_front
-        displayName: 'Construir y Subir Imagen Docker de Front a ACR'
-        pool:
-          vmImage: 'ubuntu-latest'
-          
-        steps:
-          - checkout: self
+          #----------------------------------------------------------
+          # BUILD DOCKER FRONT IMAGE Y PUSH A AZURE CONTAINER REGISTRY
+          #----------------------------------------------------------
 
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Artefactos de Front'
             inputs:
               buildType: 'current'
-              artifactName: 'drop-front'
-              targetPath: '$(Pipeline.Workspace)/drop-front'
-          
+              artifactName: 'front-drop'
+              targetPath: '$(Pipeline.Workspace)/front-drop'
+
           - task: DownloadPipelineArtifact@2
             displayName: 'Descargar Dockerfile de Front'
             inputs:
@@ -256,22 +250,13 @@ stages:
               artifactName: 'dockerfile-front'
               targetPath: '$(Pipeline.Workspace)/dockerfile-front'
 
-          - task: AzureCLI@2
-            displayName: 'Iniciar Sesión en Azure Container Registry (ACR)'
-            inputs:
-              azureSubscription: '$(ConnectedServiceName)'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                az acr login --name $(acrLoginServer)
-      
           - task: Docker@2
             displayName: 'Construir Imagen Docker para Front'
             inputs:
               command: build
               repository: $(acrLoginServer)/$(frontImageName)
-              dockerfile: $(Pipeline.Workspace)/dockerfile-front/dockerfile
-              buildContext: $(Pipeline.Workspace)/drop-front
+              dockerfile: $(Pipeline.Workspace)/dockerfile-front/Dockerfile
+              buildContext: $(Pipeline.Workspace)/front-drop
               tags: 'latest'
 
           - task: Docker@2
@@ -280,9 +265,11 @@ stages:
               command: push
               repository: $(acrLoginServer)/$(frontImageName)
               tags: 'latest'
-  #----------------------------------------------------------
-  # ### STAGE DEPLOY TO ACI QA
-  #----------------------------------------------------------
+
+#----------------------------------------------------------
+# ### STAGE DEPLOY TO ACI QA
+#----------------------------------------------------------
+
   - stage: DeployToACIQA
     displayName: 'Desplegar en Azure Container Instances (ACI) QA'
     dependsOn: DockerBuildAndPush
@@ -291,34 +278,37 @@ stages:
         displayName: 'Desplegar en Azure Container Instances (ACI) QA'
         pool:
           vmImage: 'ubuntu-latest'
+
         steps:
-      
+          #------------------------------------------------------
+          # DEPLOY DOCKER BACK IMAGE A AZURE CONTAINER INSTANCES QA
+          #------------------------------------------------------
 
-        - task: AzureCLI@2
-          displayName: 'Desplegar Imagen Docker de Back en ACI QA'
-          inputs:
-            azureSubscription: '$(ConnectedServiceName)'
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              echo "Resource Group: $(ResourceGroupName)"
-              echo "Container Instance Name: $(backContainerInstanceNameQA)"
-              echo "ACR Login Server: $(acrLoginServer)"
-              echo "Image Name: $(backImageName)"
-              echo "Image Tag: $(backImageTag)"
-              echo "Connection String: $(cnn_string_qa)"
-          
-              az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes
+          - task: AzureCLI@2
+            displayName: 'Desplegar Imagen Docker de Back en ACI QA'
+            inputs:
+              azureSubscription: '$(ConnectedServiceName)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                echo "Resource Group: $(ResourceGroupName)"
+                echo "Container Instance Name: $(backContainerInstanceNameQA)"
+                echo "ACR Login Server: $(acrLoginServer)"
+                echo "Image Name: $(backImageName)"
+                echo "Image Tag: $(backImageTag)"
+                echo "Connection String: $(cnn_string_qa)"
+                
+                az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes
 
-              az container create --resource-group $(ResourceGroupName) \
-                --name $(backContainerInstanceNameQA) \
-                --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
-                --registry-login-server $(acrLoginServer) \
-                --registry-username $(acrName) \
-                --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
-                --dns-name-label $(backContainerInstanceNameQA) \
-                --ports 80 \
-                --environment-variables ConnectionStrings__DefaultConnection="$(cnn_string_qa)" \
-                --restart-policy Always \
-                --cpu $(container-cpu-api-qa) \
-                --memory $(container-memory-api-qa)
+                az container create --resource-group $(ResourceGroupName) \
+                  --name $(backContainerInstanceNameQA) \
+                  --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
+                  --registry-login-server $(acrLoginServer) \
+                  --registry-username $(acrName) \
+                  --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
+                  --dns-name-label $(backContainerInstanceNameQA) \
+                  --ports 80 \
+                  --environment-variables ConnectionStrings__DefaultConnection="$(cnn_string_qa)" \
+                  --restart-policy Always \
+                  --cpu $(container-cpu-api-qa) \
+                  --memory $(container-memory-api-qa)
