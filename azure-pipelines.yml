@@ -19,6 +19,10 @@ variables:
   container-cpu-api-qa: 1 #CPUS de nuestro container de QA
   container-memory-api-qa: 1.5 #RAM de nuestro container de QA
   acrName: 'ftmingsoft3uccacr' # Nombre de tu ACR sin el sufijo .azurecr.io
+  frontContainerInstanceNameQA: 'ftm-crud-front-qa'
+  frontImageTag: 'latest' 
+  container-cpu-front-qa: 1
+  container-memory-front-qa: 1.5
 
 stages:
   - stage: BuildAndTestBackAndFront
@@ -317,3 +321,37 @@ stages:
                 --cpu $(container-cpu-api-qa) \
                 --memory $(container-memory-api-qa)
 
+      - job: deploy_front_to_aci_qa
+        displayName: 'Desplegar Frontend en Azure Container Instances (ACI) QA'
+        pool:
+         vmImage: 'ubuntu-latest'
+        
+        steps:
+
+        - task: AzureCLI@2
+          displayName: 'Desplegar Imagen Docker de Front en ACI QA'
+          inputs:
+            azureSubscription: '$(ConnectedServiceName)'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              echo "Resource Group: $(ResourceGroupName)"
+              echo "Container Instance Name: $(frontContainerInstanceNameQA)"
+              echo "ACR Login Server: $(acrLoginServer)"
+              echo "Image Name: $(frontImageName)"
+              echo "Image Tag: $(frontImageTag)"
+          
+              az container delete --resource-group $(ResourceGroupName) --name $(frontContainerInstanceNameQA) --yes
+
+              az container create --resource-group $(ResourceGroupName) \
+                --name $(frontContainerInstanceNameQA) \
+                --image $(acrLoginServer)/$(frontImageName):$(frontImageTag) \
+                --registry-login-server $(acrLoginServer) \
+                --registry-username $(acrName) \
+                --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
+                --dns-name-label $(frontContainerInstanceNameQA) \
+                --ports 80 \
+                --environment-variables API_URL="$(api_url_aci_qa)" \
+                --restart-policy Always \
+                --cpu $(container-cpu-front-qa) \
+                --memory $(container-memory-front-qa)
