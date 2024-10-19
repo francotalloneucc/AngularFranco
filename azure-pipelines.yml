@@ -265,3 +265,51 @@ stages:
               command: push
               repository: $(acrLoginServer)/$(frontImageName)
               tags: 'latest'
+
+#----------------------------------------------------------
+  # ### STAGE DEPLOY EN AZURE CONTAINER INSTANCES (ACI)
+  #----------------------------------------------------------
+  - stage: DeployToACI
+    displayName: 'Desplegar en ACI'
+    dependsOn: DockerBuildAndPush
+    jobs:
+      - job: DeployBack
+        displayName: 'Desplegar Back en ACI'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Desplegar Back en ACI (QA)'
+            inputs:
+              azureSubscription: $(ConnectedServiceName)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az container create --resource-group $(ResourceGroupName) \
+                --name $(backContainerInstanceNameQA) \
+                --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
+                --cpu $(container-cpu-api-qa) --memory $(container-memory-api-qa) \
+                --registry-login-server $(acrLoginServer) \
+                --registry-username $(acrName) \
+                --registry-password $(registryPassword) \
+                --environment-variables "ASPNETCORE_ENVIRONMENT=QA" "ConnectionStrings__DefaultConnection=$(cnn_string_qa)"
+
+      - job: DeployFront
+        displayName: 'Desplegar Front en ACI'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Desplegar Front en ACI (QA)'
+            inputs:
+              azureSubscription: $(ConnectedServiceName)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az container create --resource-group $(ResourceGroupName) \
+                --name $(frontContainerInstanceNameQA) \
+                --image $(acrLoginServer)/$(frontImageName):$(frontImageTag) \
+                --cpu $(container-cpu-front-qa) --memory $(container-memory-front-qa) \
+                --registry-login-server $(acrLoginServer) \
+                --registry-username $(acrName) \
+                --registry-password $(registryPassword)
