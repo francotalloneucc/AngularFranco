@@ -351,7 +351,7 @@ stages:
                 --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
                 --dns-name-label $(frontContainerInstanceNameQA) \
                 --ports 80 \
-                --environment-variables API_URL="$(container-url-api-qa)" \
+                --environment-variables API_URL="$(API_URL)" \
                 --restart-policy Always \
                 --cpu $(container-cpu-front-qa) \
                 --memory $(container-memory-front-qa)
