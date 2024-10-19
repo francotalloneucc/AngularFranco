@@ -36,6 +36,15 @@ stages:
           - checkout: self
             fetchDepth: 0
 
+          # Preparar SonarCloud
+          - task: SonarCloudPrepare@2
+            inputs:
+              SonarCloud: 'SonarCloud'
+              organization: 'francotallone'
+              scannerMode: 'MSBuild'
+              projectKey: 'francotallone_TP7'
+              projectName: 'TP7'
+
           # Instalar .NET 8 SDK
           - task: UseDotNet@2
             displayName: 'Instalar .NET 8.0 SDK'
@@ -91,6 +100,16 @@ stages:
               ArtifactName: 'drop-back'
               publishLocation: 'Container'
 
+          # Análisis de código con SonarCloud
+          - task: SonarCloudAnalyze@2
+            inputs:
+              jdkversion: 'JAVA_HOME_17_X64'
+
+          # Publicar resultados de SonarCloud
+          - task: SonarCloudPublish@2
+            inputs:
+              pollingTimeoutSec: '300'
+
           # Publicar Dockerfile de Back
           - task: PublishPipelineArtifact@1
             displayName: 'Publicar Dockerfile de Back'
@@ -111,13 +130,7 @@ stages:
             displayName: 'Instalar Node.js'
             inputs:
               versionSpec: '22.x'
-
-          # Generar archivo env.js
-          - script: |
-              node src/generate-env.js
-            displayName: 'Generar archivo env.js'
-            workingDirectory: $(frontPath)
-
+    
           # Instalar dependencias
           - script: npm install
             displayName: 'Instalar dependencias'
@@ -265,51 +278,80 @@ stages:
               command: push
               repository: $(acrLoginServer)/$(frontImageName)
               tags: 'latest'
-
-#----------------------------------------------------------
-  # ### STAGE DEPLOY EN AZURE CONTAINER INSTANCES (ACI)
   #----------------------------------------------------------
-  - stage: DeployToACI
-    displayName: 'Desplegar en ACI'
-    dependsOn: DockerBuildAndPush
+  # ### STAGE DEPLOY TO ACI QA
+  #----------------------------------------------------------
+  - stage: DeployToACIQA
+    displayName: 'Desplegar en Azure Container Instances (ACI) QA'
+    dependsOn: DockerBuildAndPush 
     jobs:
-      - job: DeployBack
-        displayName: 'Desplegar Back en ACI'
+      - job: deploy_to_aci_qa
+        displayName: 'Desplegar en Azure Container Instances (ACI) QA'
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - task: AzureCLI@2
-            displayName: 'Desplegar Back en ACI (QA)'
-            inputs:
-              azureSubscription: $(ConnectedServiceName)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                az container create --resource-group $(ResourceGroupName) \
+      
+
+        - task: AzureCLI@2
+          displayName: 'Desplegar Imagen Docker de Back en ACI QA'
+          inputs:
+            azureSubscription: '$(ConnectedServiceName)'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              echo "Resource Group: $(ResourceGroupName)"
+              echo "Container Instance Name: $(backContainerInstanceNameQA)"
+              echo "ACR Login Server: $(acrLoginServer)"
+              echo "Image Name: $(backImageName)"
+              echo "Image Tag: $(backImageTag)"
+              echo "Connection String: $(cnn_string_qa)"
+          
+              az container delete --resource-group $(ResourceGroupName) --name $(backContainerInstanceNameQA) --yes
+
+              az container create --resource-group $(ResourceGroupName) \
                 --name $(backContainerInstanceNameQA) \
                 --image $(acrLoginServer)/$(backImageName):$(backImageTag) \
-                --cpu $(container-cpu-api-qa) --memory $(container-memory-api-qa) \
                 --registry-login-server $(acrLoginServer) \
                 --registry-username $(acrName) \
-                --registry-password $(registryPassword) \
-                --environment-variables "ASPNETCORE_ENVIRONMENT=QA" "ConnectionStrings__DefaultConnection=$(cnn_string_qa)"
+                --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
+                --dns-name-label $(backContainerInstanceNameQA) \
+                --ports 80 \
+                --environment-variables ConnectionStrings__DefaultConnection="$(cnn_string_qa)" \
+                --restart-policy Always \
+                --cpu $(container-cpu-api-qa) \
+                --memory $(container-memory-api-qa)
 
-      - job: DeployFront
-        displayName: 'Desplegar Front en ACI'
+      - job: deploy_front_to_aci_qa
+        displayName: 'Desplegar Frontend en Azure Container Instances (ACI) QA'
         pool:
-          vmImage: 'ubuntu-latest'
+         vmImage: 'ubuntu-latest'
+        
         steps:
-          - task: AzureCLI@2
-            displayName: 'Desplegar Front en ACI (QA)'
-            inputs:
-              azureSubscription: $(ConnectedServiceName)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                az container create --resource-group $(ResourceGroupName) \
+
+        - task: AzureCLI@2
+          displayName: 'Desplegar Imagen Docker de Front en ACI QA'
+          inputs:
+            azureSubscription: '$(ConnectedServiceName)'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              echo "Resource Group: $(ResourceGroupName)"
+              echo "Container Instance Name: $(frontContainerInstanceNameQA)"
+              echo "ACR Login Server: $(acrLoginServer)"
+              echo "Image Name: $(frontImageName)"
+              echo "Image Tag: $(frontImageTag)"
+          
+              az container delete --resource-group $(ResourceGroupName) --name $(frontContainerInstanceNameQA) --yes
+
+              az container create --resource-group $(ResourceGroupName) \
                 --name $(frontContainerInstanceNameQA) \
                 --image $(acrLoginServer)/$(frontImageName):$(frontImageTag) \
-                --cpu $(container-cpu-front-qa) --memory $(container-memory-front-qa) \
                 --registry-login-server $(acrLoginServer) \
                 --registry-username $(acrName) \
-                --registry-password $(registryPassword)
+                --registry-password $(az acr credential show --name $(acrName) --query "passwords[0].value" -o tsv) \
+                --dns-name-label $(frontContainerInstanceNameQA) \
+                --ports 80 \
+                --environment-variables API_URL="$(API_URL)" \
+                --restart-policy Always \
+                --cpu $(container-cpu-front-qa) \
+                --memory $(container-memory-front-qa)
