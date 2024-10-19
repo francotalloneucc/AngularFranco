@@ -8,7 +8,7 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copiar los archivos compilados de Angular al directorio de nginx
-COPY . .
+COPY ./employee-crud-angular/browser/ ./
 
 # Exponer el puerto 80 para servir la aplicación Angular
 EXPOSE 80
