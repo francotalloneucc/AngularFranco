@@ -4,9 +4,7 @@
 
 export const environment = {
   production: false,
-  apiUrl: (typeof window !== 'undefined' && window.env && window.env.apiUrl) 
-             ? window.env.apiUrl
-             : 'http://localhost:7150/api/Employee' // Valor por defecto
+  apiUrl:'http://ftm-crud-api-qa.eastus.azurecontainer.io/api/Employee' // Valor por defecto
 };
 
 /*
