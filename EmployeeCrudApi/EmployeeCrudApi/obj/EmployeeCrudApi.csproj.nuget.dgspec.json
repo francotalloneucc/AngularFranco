@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj": {}
+    "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj": {
+    "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj",
+        "projectUniqueName": "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj",
         "projectName": "EmployeeCrudApi",
-        "projectPath": "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj",
-        "packagesPath": "C:\\Users\\oscar\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\oscar\\Desktop\\INGENIERIA EN SISTEMAS\\2024\\SEGUNDO SEMESTRE\\ing de sw 3\\Angular_WebAPINetCore8_CRUD_Sample\\EmployeeCrudApi\\EmployeeCrudApi\\obj\\",
+        "projectPath": "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi\\EmployeeCrudApi\\EmployeeCrudApi.csproj",
+        "packagesPath": "C:\\Users\\franc\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\franc\\Desktop\\proy\\AngularFranco\\EmployeeCrudApi\\EmployeeCrudApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\oscar\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\franc\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
