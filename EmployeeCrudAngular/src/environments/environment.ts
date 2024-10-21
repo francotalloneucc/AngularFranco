@@ -4,9 +4,8 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:7150/api/Employee'  // URL de la API para desarrollo
+  apiUrl:'http://ftm-crud-api-qa.brazilsouth.azurecontainer.io/api/Employee' // Valor por defecto
 };
-
 
 /*
  * For easier debugging in development mode, you can import the following file
